@@ -1,4 +1,5 @@
 use quill_prototype::BlockPosition;
+use crate::models::block::BlockData;
 
 fn selection(pos_one: BlockPosition, pos_two: BlockPosition) -> Selection {
     let upper = BlockPosition {
@@ -21,7 +22,7 @@ fn selection(pos_one: BlockPosition, pos_two: BlockPosition) -> Selection {
 
 pub struct Selection {
     upper: BlockPosition,
-    lower: BlockPosition
+    lower: BlockPosition,
 }
 
 impl Selection {
@@ -29,6 +30,11 @@ impl Selection {
         x <= self.upper.x as f64 && x >= self.lower.x as f64 &&
             y <= self.upper.y as f64 && y >= self.lower.y as f64 &&
             z <= self.upper.z as f64 && z >= self.lower.z as f64
+    }
+
+    fn blocks() -> Vec<BlockData> {
+        //todo get all blocks within selection that isn't air
+        Vec::new()
     }
 }
 

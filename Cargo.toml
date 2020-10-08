@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 quill-prototype = "0.0.0-prototype.1"
 rand = "0.7.3"
+glam = "0.9.4"
