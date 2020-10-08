@@ -1,8 +1,10 @@
 use crate::models::block::BlockData;
+use quill_prototype::BlockPosition;
 
 pub struct Clipboard {
     // a set of block data *relative to copy origin* pertaining to this clipboard
-    pub data: Vec<BlockData>
+    pub data: Vec<BlockData>,
+    pub origin: BlockPosition,
     //todo player (owner) field
 }
 
