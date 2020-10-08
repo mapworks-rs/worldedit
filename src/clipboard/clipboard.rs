@@ -14,8 +14,7 @@ pub mod operations {
         use crate::clipboard::clipboard::Clipboard;
         use quill_prototype::BlockPosition;
         use std::borrow::BorrowMut;
-        use crate::math::quaternion::{quaternion_x, quaternion_y, quaternion_z, Quaternion, quaternion_xyz};
-        use crate::math::vector::Vector3;
+        use crate::math::vector::{Vector3, rotate};
 
         pub struct Rotate {
             pub x_deg: f64,
@@ -26,37 +25,21 @@ pub mod operations {
         impl Operation for Rotate {
             fn perform(&self, clipboard: Option<&mut Clipboard>, selection: Option<&mut Selection>) {
                 if let Some(clip) = clipboard {
-
-                    let quaternion: Quaternion = quaternion_xyz(self.x_deg, self.y_deg, self.z_deg);
-
                     for block in &mut clip.data {
-                        rotate(block.pos.borrow_mut(), &quaternion);
+                        rotate(block.pos.borrow_mut(), self.x_deg.to_radians(),
+                               self.y_deg.to_radians(), self.z_deg.to_radians())
                     }
                 }
             }
 
             fn undo(&self, clipboard: Option<&mut Clipboard>, selection: Option<&mut Selection>) {
                 if let Some(clip) = clipboard {
-
-                    let quaternion: Quaternion = quaternion_xyz(-self.x_deg, -self.y_deg, -self.z_deg);
-
                     for block in &mut clip.data {
-                        rotate(block.pos.borrow_mut(), &quaternion);
+                        rotate(block.pos.borrow_mut(), -self.x_deg.to_radians(),
+                               -self.y_deg.to_radians(), -self.z_deg.to_radians())
                     }
                 }
             }
-        }
-
-        fn rotate(to_rotate: &mut BlockPosition, quaternion: &Quaternion) {
-            let rotated = quaternion.rotate(Vector3 {
-                x: to_rotate.x as f64,
-                y: to_rotate.y as f64,
-                z: to_rotate.z as f64
-            });
-
-            to_rotate.x = rotated.x.round() as i32;
-            to_rotate.y = rotated.y.round() as i32;
-            to_rotate.z = rotated.z.round() as i32;
         }
     }
 
