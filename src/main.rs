@@ -7,7 +7,6 @@ pub mod operation;
 pub mod models;
 pub mod selection;
 pub mod clipboard;
-pub mod math;
 
 fn main() {
 
@@ -35,7 +34,7 @@ fn main() {
     // }
     // println!("rotated {} vectors in {:?}", p, dur.elapsed());
 
-    let mut q = Quat::from_rotation_y(90_f32.to_radians());
+    let mut q = Quat::from_rotation_y(90.0_f32.to_radians());
 
     let v = q.mul_vec3a(Vec3A::new(1.0, 1.0, 0.0));
 
