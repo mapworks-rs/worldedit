@@ -2,64 +2,80 @@ use quill_prototype::BlockPosition;
 use std::f32::consts::PI;
 use crate::util::blockpos;
 
-/*
-This circle uses Bresenham's Circle Algorithm for drawing the circle. It works based on starting at
-(0, radius) to plot the first point. Then increment the x value. A "decision parameter" is held and
-used for determining when to decrement the y value. Using 8-point symmetry, we can draw 8 points in
-one cycle. If the circle is to be filled, a line is drawn between two points across from each other,
-filling at most 4 rows/columns per cycle making this algorithm very efficient.
- */
-pub fn circle(radius: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn ellipse(r_x: i32, r_z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
-    let mut x_diff = 0;
-    let mut z_diff = radius as i32;
-    let mut decision = 3 - (2 * radius) as i32;
+    if r_x == 0 || r_z == 0 {
+        return vecs;
+    }
 
-    while z_diff >= x_diff {
+    let radii_bound = r_z * r_z * r_x * r_x;
 
-        vecs.push(blockpos(origin.x + x_diff, origin.y, origin.z + z_diff));
-        vecs.push(blockpos(origin.x + x_diff, origin.y, origin.z - z_diff));
+    for x in 0..(r_x + 1) as i32 {
+        for z in 0..(r_z + 1) as i32 {
+            let p = x * x * r_z * r_z + z * z * r_x * r_x;
+            if p > radii_bound || (!filled && p < radii_bound) { continue; }
 
-        vecs.push(blockpos(origin.x + z_diff, origin.y, origin.z + x_diff));
-        vecs.push(blockpos(origin.x + z_diff, origin.y, origin.z - x_diff));
-
-        vecs.push(blockpos(origin.x - z_diff, origin.y, origin.z + x_diff));
-        vecs.push(blockpos(origin.x - z_diff, origin.y, origin.z - x_diff));
-
-        vecs.push(blockpos(origin.x - x_diff, origin.y, origin.z + z_diff));
-        vecs.push(blockpos(origin.x - x_diff, origin.y, origin.z - z_diff));
-
-        if filled {
-            for i in 1..(2 * z_diff - 1) {
-                vecs.push(blockpos(origin.x + x_diff, origin.y, origin.z + z_diff - i));
-                vecs.push(blockpos(origin.x - x_diff, origin.y, origin.z + z_diff - i));
-            }
-
-            for i in 1..(2 * x_diff - 1) {
-                vecs.push(blockpos(origin.x + z_diff, origin.y, origin.z + x_diff - i));
-                vecs.push(blockpos(origin.x - z_diff, origin.y, origin.z + x_diff - i));
-            }
-        }
-
-        x_diff += 1;
-        if decision > 0 {
-            z_diff -= 1;
-            decision = decision + 4 * (x_diff - z_diff) + 10;
-        } else {
-            decision = decision + 4 * x_diff + 6;
+            vecs.push(blockpos(origin.x + x, origin.y, origin.z + z));
+            vecs.push(blockpos(origin.x - x, origin.y, origin.z + z));
+            vecs.push(blockpos(origin.x + x, origin.y, origin.z - z));
+            vecs.push(blockpos(origin.x - x, origin.y, origin.z - z));
         }
     }
 
     vecs
 }
 
-pub fn cyl(radius: u32, height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn circle(r: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    ellipse(r, r, filled, origin)
+}
+
+pub fn ellipsoid(r_x: i32, r_y: i32, r_z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
-    for i in 0..height {
-        vecs.extend(circle(radius, filled, &blockpos(origin.x, origin.y + i as i32, origin.z)));
+
+    if r_x == 0 || r_z == 0 || r_y == 0 {
+        return vecs;
     }
+
+    let radii_bound = r_x * r_x * r_y * r_y * r_z * r_z;
+
+    for x in 0..(r_x + 1) {
+        for y in 0..(r_y + 1) {
+            for z in 0..(r_z + 1) {
+                let p = x*x * r_z*r_z * r_y*r_y + y*y * r_x*r_x * r_z*r_z + z*z + r_y*r_y + r_x*r_x;
+                if p > radii_bound || (!filled && p < radii_bound) { continue; }
+
+                vecs.push(blockpos(origin.x + x, origin.y + y, origin.z + z));
+                vecs.push(blockpos(origin.x - x, origin.y + y, origin.z + z));
+                vecs.push(blockpos(origin.x + x, origin.y + y, origin.z - z));
+                vecs.push(blockpos(origin.x - x, origin.y + y, origin.z - z));
+                vecs.push(blockpos(origin.x + x, origin.y - y, origin.z + z));
+                vecs.push(blockpos(origin.x - x, origin.y - y, origin.z + z));
+                vecs.push(blockpos(origin.x + x, origin.y - y, origin.z - z));
+                vecs.push(blockpos(origin.x - x, origin.y - y, origin.z - z));
+            }
+        }
+    }
+
     vecs
+}
+
+pub fn sphere(r: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    ellipsoid(r, r, r, filled, origin)
+}
+
+pub fn cyl_elip(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    let mut vecs: Vec<BlockPosition> = Vec::new();
+
+    for y in 0..(height + 1) {
+        vecs.extend(ellipse(r_x, r_z, filled, &blockpos(origin.x, origin.y + y, origin.z)));
+    }
+    
+    vecs
+}
+
+pub fn cyl(r: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    cyl_elip(r, r, height, filled, origin)
 }
 
 pub fn rec_prism(x: i32, y: i32, z: i32, origin: &BlockPosition) -> Vec<BlockPosition> {
@@ -112,42 +128,6 @@ pub fn hrec_prism(x: i32, y: i32, z: i32, floor: bool, ceiling: bool, origin: &B
                 }
             }
         }
-    }
-
-    vecs
-}
-
-/*
-This sphere function uses Bresenham's Circle algorithm to first generate a vertical circle. This
-circle's changes in altitude mark where a horizontal circle should be make whose radius is the
-longest part of the horizontal step before the change in y of the vertical circle.
-
-In short, this sphere is generated by using the widest part of the changes in y of a vertical circle
-whose radius is the radius of this sphere.
- */
-pub fn sphere(radius: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
-    let mut vecs: Vec<BlockPosition> = Vec::new();
-
-    let mut x_diff = 0;
-    let mut y_diff = radius as i32;
-    let mut decision = 3 - (2 * radius) as i32;
-
-    let mut radii: Vec<u32> = Vec::new();
-
-    while y_diff >= x_diff {
-        x_diff += 1;
-        if decision > 0 {
-            y_diff -= 1;
-            decision = decision + 4 * (x_diff - y_diff) + 10;
-            radii.push(x_diff as u32);
-        } else {
-            decision = decision + 4 * x_diff + 6;
-        }
-    }
-
-    for (i, r) in radii.iter().enumerate() {
-        vecs.extend(circle(r.clone(), filled, &blockpos(origin.x, origin.y + radius - i, origin.z)));
-        vecs.extend(circle(r.clone(), filled, &blockpos(origin.x, origin.y - radius + i, origin.z)));
     }
 
     vecs
