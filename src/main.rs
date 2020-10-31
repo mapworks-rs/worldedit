@@ -10,9 +10,4 @@ pub mod math;
 pub mod util;
 
 fn main() {
-    let v: Vec<BlockPosition> = line(2, 10, &blockpos(0, 0, 0));
-
-     for bp in v {
-         println!("({},{})", bp.x, bp.z);
-     }
 }
