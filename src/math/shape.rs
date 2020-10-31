@@ -1,6 +1,38 @@
 use quill_prototype::BlockPosition;
-use std::f32::consts::PI;
 use crate::util::blockpos;
+use std::alloc::handle_alloc_error;
+
+pub fn rectangle(x: i32, y: i32, z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    let mut vecs: Vec<BlockPosition> = Vec::new();
+
+    if x == 0 || z == 0 || y == 0 {
+        return vecs;
+    }
+
+    if !filled {
+        for y_diff in 0..y {
+            for x_diff in 0..x {
+                vecs.push(blockpos(origin.x + x_diff, origin.y + y_diff, origin.z));
+                vecs.push(blockpos(origin.x + x_diff, origin.y + y_diff, origin.z + z - 1));
+            }
+
+            for z_diff in 0..z {
+                vecs.push(blockpos(origin.x, origin.y + y_diff, origin.z + z_diff));
+                vecs.push(blockpos(origin.x + x - 1, origin.y + y_diff, origin.z + z_diff));
+            }
+        }
+    } else {
+        for y_diff in 0..y {
+            for x_diff in 0..x {
+                for z_diff in 0..z {
+                    vecs.push(blockpos(origin.x + x_diff, origin.y + y_diff, origin.z + z_diff));
+                }
+            }
+        }
+    }
+
+    vecs
+}
 
 pub fn ellipse(r_x: i32, r_z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
@@ -26,8 +58,8 @@ pub fn ellipse(r_x: i32, r_z: i32, filled: bool, origin: &BlockPosition) -> Vec<
     vecs
 }
 
-pub fn circle(r: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
-    ellipse(r, r, filled, origin)
+pub fn circle(r: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+    ellipse(r as i32, r as i32, filled, origin)
 }
 
 pub fn ellipsoid(r_x: i32, r_y: i32, r_z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
@@ -64,7 +96,7 @@ pub fn sphere(r: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition
     ellipsoid(r, r, r, filled, origin)
 }
 
-pub fn cyl_elip(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn cylinder_ellipse(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
     for y in 0..(height + 1) {
@@ -74,60 +106,27 @@ pub fn cyl_elip(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPos
     vecs
 }
 
-pub fn cyl(r: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn cylinder(r: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     cyl_elip(r, r, height, filled, origin)
 }
 
-pub fn rec_prism(x: i32, y: i32, z: i32, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn pyramid(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
-    for a in 0..(x + 1) {
-        for b in 0..(z + 1) {
-            for c in 0..y {
-                vecs.push(BlockPosition {
-                    x: (a + origin.x),
-                    y: (c + origin.y),
-                    z: (b + origin.z)
-                });
-            }
-        }
+    for i in 0..height {
+        vecs.extend(rec((2 * height - i) as i32, 1, (2 * height - i) as i32, filled,
+            &blockpos(origin.x, origin.y + i, origin.z)
+        ));
     }
 
     vecs
 }
 
-pub fn hrec_prism(x: i32, y: i32, z: i32, floor: bool, ceiling: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn cone(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
-    // this function draws the walls
-    for y_inc in 0..y {
-        // walls iterating over x with z constant
-        for i in 0..(x + 1) {
-            vecs.push(BlockPosition { x: (i + origin.x), y: (y_inc + origin.y), z: origin.z });
-            vecs.push(BlockPosition { x: (i + origin.x), y: (y_inc + origin.y), z: (z + origin.z) });
-        }
-
-        // walls iterating over z with x constant
-        for i in 0..(z + 1) {
-            vecs.push(BlockPosition { x: origin.x, y: (y_inc + origin.y), z: (i + origin.z) });
-            vecs.push(BlockPosition { x: (x + origin.x), y: (y_inc + origin.y), z: (i + origin.z) });
-        }
-    }
-
-    // don't want to run some loops if both are false
-    if floor || ceiling {
-        // this draws the top and bottom plates (floor and ceiling)
-        for a in 0..(z + 1) {
-            for b in 0..(x + 1) {
-                if floor {
-                    vecs.push(BlockPosition { x: (b + origin.x), y: origin.y, z: (a + origin.z) });
-                }
-
-                if ceiling {
-                    vecs.push(BlockPosition { x: (b + origin.x), y: (y + origin.y - 1), z: (a + origin.z) });
-                }
-            }
-        }
+    for i in 0..height {
+        vecs.extend(circle((height - i), filled, &blockpos(origin.x, origin.y + i, origin.z)));
     }
 
     vecs
