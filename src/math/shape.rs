@@ -1,8 +1,7 @@
 use quill_prototype::BlockPosition;
 use crate::util::blockpos;
-use std::alloc::handle_alloc_error;
 
-pub fn rectangle(x: i32, y: i32, z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn rec(x: i32, y: i32, z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
     if x == 0 || z == 0 || y == 0 {
@@ -96,7 +95,7 @@ pub fn sphere(r: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition
     ellipsoid(r, r, r, filled, origin)
 }
 
-pub fn cylinder_ellipse(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn cyl_ellip(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
     for y in 0..(height + 1) {
@@ -107,7 +106,7 @@ pub fn cylinder_ellipse(r_x: i32, r_z: i32, height: i32, filled: bool, origin: &
 }
 
 pub fn cylinder(r: i32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
-    cyl_elip(r, r, height, filled, origin)
+    cyl_ellip(r, r, height, filled, origin)
 }
 
 pub fn pyramid(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
@@ -115,7 +114,7 @@ pub fn pyramid(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPo
 
     for i in 0..height {
         vecs.extend(rec((2 * height - i) as i32, 1, (2 * height - i) as i32, filled,
-            &blockpos(origin.x, origin.y + i, origin.z)
+            &blockpos(origin.x, origin.y + i as i32, origin.z)
         ));
     }
 
@@ -126,7 +125,8 @@ pub fn cone(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosit
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
     for i in 0..height {
-        vecs.extend(circle((height - i), filled, &blockpos(origin.x, origin.y + i, origin.z)));
+        vecs.extend(circle((height - i), filled,
+                           &blockpos(origin.x, origin.y + i as i32, origin.z)));
     }
 
     vecs
