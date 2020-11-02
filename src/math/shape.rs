@@ -121,11 +121,11 @@ pub fn pyramid(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPo
     vecs
 }
 
-pub fn cone(height: u32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn cone(height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
     for i in 0..height {
-        vecs.extend(circle((height - i), filled,
+        vecs.extend(circle(((height - i) as u32), filled,
                            &blockpos(origin.x, origin.y + i as i32, origin.z)));
     }
 
