@@ -1,3 +1,3 @@
-pub enum Plane {
+pub enum CoordAxis {
     X, Y, Z
 }

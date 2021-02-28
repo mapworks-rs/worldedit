@@ -2,7 +2,7 @@ pub const BLOCKPOS_ZERO: BlockPosition = BlockPosition { x: 0, y: 0, z: 0 };
 
 use plotters::prelude::*;
 use quill::BlockPosition;
-use crate::directional::Plane;
+use crate::directional::CoordAxis;
 
 pub fn blockpos(x: i32, y: i32, z: i32) -> BlockPosition {
     BlockPosition { x, y, z }
@@ -36,12 +36,12 @@ pub fn graph3d(mut vecs: Vec<BlockPosition>) {
 }
 
 // temp
-pub fn graph(mut vecs: Vec<BlockPosition>, plane: Plane) {
+pub fn graph(mut vecs: Vec<BlockPosition>, plane: CoordAxis) {
 
     let mut reduced: Vec<(i32, i32)> = match plane {
-        Plane::X => vecs.iter().map(|bp| (bp.y, bp.z)).collect(),
-        Plane::Y => vecs.iter().map(|bp| (bp.x, bp.z)).collect(),
-        Plane::Z => vecs.iter().map(|bp| (bp.y, bp.x)).collect()
+        CoordAxis::X => vecs.iter().map(|bp| (bp.y, bp.z)).collect(),
+        CoordAxis::Y => vecs.iter().map(|bp| (bp.x, bp.z)).collect(),
+        CoordAxis::Z => vecs.iter().map(|bp| (bp.y, bp.x)).collect()
     };
 
     let root_area = BitMapBackend::new("graphs/graph.png", (600, 600))
