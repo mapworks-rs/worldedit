@@ -1,5 +1,5 @@
-use quill_prototype::BlockPosition;
 use crate::util::{blockpos, len_sq2, len_sq3};
+use quill::BlockPosition;
 
 pub fn rec(x: i32, y: i32, z: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
@@ -33,11 +33,11 @@ pub fn rec(x: i32, y: i32, z: i32, filled: bool, origin: &BlockPosition) -> Vec<
     vecs
 }
 
-pub fn ellipse(mut r_x: f32, mut r_z: f32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn ellipse(radius_x: f32, radius_z: f32, height: i32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
-    r_x += 0.5;
-    r_z += 0.5;
+    let r_x = radius_x + 0.5;
+    let r_z = radius_z + 0.5;
 
     let inv_x: f32 = 1.0 / r_x;
     let inv_z: f32 = 1.0 / r_z;
@@ -68,12 +68,12 @@ pub fn ellipse(mut r_x: f32, mut r_z: f32, height: i32, filled: bool, origin: &B
     vecs
 }
 
-pub fn ellipsoid(mut r_x: f32, mut r_y: f32, mut r_z: f32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
+pub fn ellipsoid(radius_x: f32, radius_y: f32, radius_z: f32, filled: bool, origin: &BlockPosition) -> Vec<BlockPosition> {
     let mut vecs: Vec<BlockPosition> = Vec::new();
 
-    r_x += 0.5;
-    r_z += 0.5;
-    r_y += 0.5;
+    let r_x = radius_x + 0.5;
+    let r_z = radius_y + 0.5;
+    let r_y = radius_z + 0.5;
 
     let inv_x: f32 = 1.0 / r_x;
     let inv_z: f32 = 1.0 / r_z;

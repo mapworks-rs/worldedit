@@ -1,13 +1,11 @@
 [package]
 name = "worldedit"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["sagan <camjanssen120@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-quill-prototype = "0.0.0-prototype.1"
+quill = { git = "https://github.com/feather-rs/quill", branch = "main" }
 rand = "0.7.3"
-glam = "0.9.4"
+glam = "0.12.0"
 plotters = "0.3"

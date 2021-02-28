@@ -1,14 +1,13 @@
-use quill_prototype::BlockPosition;
-use crate::models::direction::Plane;
-use crate::util::{blockpos, BLOCKPOS_ZERO, graph3d};
-use std::convert::TryInto;
-use plotters::prelude::*;
-use crate::math::shape::{rec, ellipse, ellipsoid};
-use rand::Rng;
 use std::time::Instant;
 
-pub mod operation;
-pub mod models;
+use rand::Rng;
+
+use crate::math::shape::ellipsoid;
+use crate::util::{BLOCKPOS_ZERO, graph3d};
+use crate::clipboard::transform::rotate;
+use quill::BlockPosition;
+
+pub mod directional;
 pub mod selection;
 pub mod clipboard;
 pub mod math;
@@ -35,6 +34,8 @@ fn main() {
     // println!("generated 1000 filled ellipses in {}ms", now.elapsed().as_millis())
 
     let mut vecs: Vec<BlockPosition> = ellipsoid(10.0, 15.0, 7.0, false, &BLOCKPOS_ZERO);
+
+    //rotate(&mut vecs, 0.0, 90.0, 0.0);
 
     graph3d(vecs);
 }

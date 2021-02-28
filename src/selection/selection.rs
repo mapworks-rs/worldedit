@@ -1,46 +1,47 @@
-use quill_prototype::BlockPosition;
-use crate::models::block::BlockData;
-
-fn selection(pos_one: BlockPosition, pos_two: BlockPosition) -> Selection {
-    let upper = BlockPosition {
-        x: pos_one.x.max(pos_two.x),
-        y: pos_one.y.max(pos_two.y),
-        z: pos_one.z.max(pos_two.z)
-    };
-
-    let lower = BlockPosition {
-        x: pos_one.x.min(pos_two.x),
-        y: pos_one.y.min(pos_two.y),
-        z: pos_one.z.min(pos_two.z)
-    };
-
-    Selection {
-        upper,
-        lower
-    }
-}
+use crate::util::blockpos;
+use quill::{BlockPosition, Position};
 
 pub struct Selection {
-    upper: BlockPosition,
-    lower: BlockPosition,
+    pos1: BlockPosition,
+    pos2: BlockPosition
 }
 
 impl Selection {
-    fn contains(&self, x: f64, y: f64, z: f64) -> bool {
-        x <= self.upper.x as f64 && x >= self.lower.x as f64 &&
-            y <= self.upper.y as f64 && y >= self.lower.y as f64 &&
-            z <= self.upper.z as f64 && z >= self.lower.z as f64
+
+    pub fn contains_blocks(&self, positions: Vec<BlockPosition>) -> bool {
+        self.contains_positions(positions.iter().map(|p| Position::from(*p)).collect())
     }
 
-    fn blocks() -> Vec<BlockData> {
-        //todo get all blocks within selection that isn't air
-        Vec::new()
+    pub fn contains_block(&self, position: BlockPosition) -> bool {
+        self.contains_positions(vec![Position::from(position)])
+    }
+
+    pub fn contains_position(&self, position: Position) -> bool {
+        self.contains_positions(vec![position])
+    }
+
+    pub fn contains_positions(&self, positions: Vec<Position>) -> bool {
+        let minx = self.pos1.x.min(self.pos2.x) as f64;
+        let maxx = self.pos1.x.max(self.pos2.x) as f64;
+        let miny = self.pos1.y.min(self.pos2.y) as f64;
+        let maxy = self.pos1.y.max(self.pos2.y) as f64;
+        let minz = self.pos1.z.min(self.pos2.z) as f64;
+        let maxz = self.pos1.z.max(self.pos2.z) as f64;
+
+        let mut contains = true;
+        for pos in positions {
+            if pos.x < minx || pos.x > maxx ||
+                pos.y < miny || pos.y > maxy ||
+                pos.z < minz || pos.z > maxz {
+                contains = false;
+                break;
+            }
+        }
+
+        contains
     }
 }
 
-pub mod operations {
-
-    pub mod set {
-
-    }
+pub enum ExpandType {
+    UP, DOWN, LEFT, RIGHT, FRONT, BACK
 }

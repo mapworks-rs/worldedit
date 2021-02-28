@@ -1,8 +1,8 @@
 pub const BLOCKPOS_ZERO: BlockPosition = BlockPosition { x: 0, y: 0, z: 0 };
 
-use quill_prototype::BlockPosition;
 use plotters::prelude::*;
-use crate::models::direction::Plane;
+use quill::BlockPosition;
+use crate::directional::Plane;
 
 pub fn blockpos(x: i32, y: i32, z: i32) -> BlockPosition {
     BlockPosition { x, y, z }
