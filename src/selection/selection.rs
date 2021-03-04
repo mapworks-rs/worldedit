@@ -5,9 +5,9 @@ use crate::directional::CoordAxis;
 use crate::util::blockpos;
 use crate::selection::selection::DeltaFace::*;
 
-pub struct Selection<T: SelectionType> {
+pub struct Selection {
     player: Player,
-    selection: T
+    selection: dyn SelectionType
 }
 
 pub trait SelectionType {
@@ -26,9 +26,24 @@ pub trait SelectionType {
 
     fn contains_positions(&self, positions: Vec<Position>) -> bool;
 
-    fn expand_face(&mut self, expand_type: DeltaFace, amount: i32);
+    fn expand_face(&mut self, delta_face: DeltaFace, amount: i32);
 
-    fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32);
+    fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32) {
+        match axis {
+            CoordAxis::X => {
+                self.expand_face(WEST, -amount);
+                self.expand_face(EAST, amount);
+            },
+            CoordAxis::Y => {
+                self.expand_face(TOP, amount);
+                self.expand_face(BOTTOM, -amount);
+            },
+            CoordAxis::Z => {
+                self.expand_face(NORTH, -amount);
+                self.expand_face(SOUTH, amount);
+            }
+        }
+    }
 }
 
 pub mod cuboid {
@@ -38,7 +53,7 @@ pub mod cuboid {
     use crate::selection::selection::{DeltaFace, SelectionType};
     use crate::selection::selection::DeltaFace::*;
 
-    struct CuboidSelection {
+    pub struct CuboidSelection {
         min: BlockPosition,
         max: BlockPosition
     }
@@ -47,7 +62,7 @@ pub mod cuboid {
 
         /// min and max MUST be conserved. See the expand_face function in CuboidSelection for examples
         /// on conserving the min/mas relation
-        fn new(pos1: BlockPosition, pos2: BlockPosition) -> CuboidSelection {
+        pub fn new(pos1: BlockPosition, pos2: BlockPosition) -> CuboidSelection {
             CuboidSelection {
                 min: BlockPosition {
                     x: pos1.x.min(pos2.x),
@@ -80,8 +95,8 @@ pub mod cuboid {
             contains
         }
 
-        fn expand_face(&mut self, delta_face: DeltaFace, amount: i32) {
-            match delta_face {
+        fn expand_face(&mut self, expand_face: DeltaFace, amount: i32) {
+            match expand_face {
                 TOP => {
                     self.max.y += amount;
                     if self.max.y < self.min.y {
@@ -133,22 +148,64 @@ pub mod cuboid {
                 }
             }
         }
+    }
+}
 
-        fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32) {
-            match axis {
-                CoordAxis::X => {
-                    self.expand_face(WEST, -amount);
-                    self.expand_face(EAST, amount);
-                },
-                CoordAxis::Y => {
-                    self.expand_face(TOP, amount);
-                    self.expand_face(BOTTOM, -amount);
-                },
-                CoordAxis::Z => {
-                    self.expand_face(NORTH, -amount);
-                    self.expand_face(SOUTH, amount);
+pub mod elliptical {
+    use quill::{BlockPosition, Position};
+    use crate::selection::selection::{SelectionType, DeltaFace};
+    use crate::directional::CoordAxis;
+    use crate::selection::selection::cuboid::CuboidSelection;
+
+    pub struct EllipticalSelection {
+        encapsulating: CuboidSelection,
+        height: i32,
+        radius_x: u32,
+        radius_z: u32
+    }
+
+    impl EllipticalSelection {
+        pub fn new(pos1: BlockPosition, pos2: BlockPosition) -> EllipticalSelection {
+            EllipticalSelection {
+                encapsulating: CuboidSelection::new(pos1, pos2),
+                height: max_bp.y - min_bp.y,
+                radius_x: ((max_bp.x - min_bp.x) as f64 / 2.0).ceil() as u32,
+                radius_z: ((max_bp.z - min_bp.z) as f64 / 2.0).ceil() as u32
+            }
+        }
+    }
+
+    impl SelectionType for EllipticalSelection {
+        fn contains_positions(&self, positions: Vec<Position>) -> bool {
+
+            // first check if its even within the cuboid
+            for pos in positions {
+                if pos.x < self.min.x as f64 || pos.x > self.max.x as f64 ||
+                    pos.y < self.min.y as f64 || pos.y > self.max.y as f64 ||
+                    pos.z < self.min.z as f64 || pos.z > self.max.z as f64 {
+                    return false;
                 }
             }
+
+            let mut contains = true;
+            for pos in positions {
+                // x^2 * r_z^2 + z^2 * r_x^2 = r_x^2 * r_z^2
+                let term = pos.x * pos.x * (self.radius_z * self.radius_z) as f64 +
+                    pos.z * pos.z * (self.radius_x * self.radius_x) as f64;
+                if term > (self.radius_z * self.radius_z * self.radius_x * self.radius_x) as f64 {
+                    contains = false;
+                    break;
+                }
+            }
+
+            contains
+        }
+
+        fn expand_face(&mut self, expand_type: DeltaFace, amount: i32) {
+            self.encapsulating.expand_face(expand_type, amount);
+            self.height = max_bp.y - min_bp.y;
+            self.radius_x = ((max_bp.x - min_bp.x) as f64 / 2.0).ceil() as u32;
+            self.radius_z = ((max_bp.z - min_bp.z) as f64 / 2.0).ceil() as u32;
         }
     }
 }

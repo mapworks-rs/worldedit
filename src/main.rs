@@ -1,4 +1,5 @@
 use crate::selection::pattern::Pattern;
+use crate::selection::selection::cuboid::CuboidSelection;
 
 pub mod directional;
 pub mod selection;
