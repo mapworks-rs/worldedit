@@ -99,7 +99,7 @@ pub mod cuboid {
                     }
                 }
                 NORTH => {
-                    self.max.z -= amount;
+                    self.min.z -= amount;
                     if self.max.z < self.min.z {
                         let temp = self.min.z;
                         self.min.z = self.max.z;
@@ -124,7 +124,7 @@ pub mod cuboid {
 
                 }
                 WEST => {
-                    self.max.x -= amount;
+                    self.min.x -= amount;
                     if self.max.x < self.min.x {
                         let temp = self.min.x;
                         self.min.x = self.max.x;
