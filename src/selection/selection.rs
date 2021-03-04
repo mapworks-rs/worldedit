@@ -26,9 +26,9 @@ pub trait SelectionType {
 
     fn contains_positions(&self, positions: Vec<Position>) -> bool;
 
-    fn delta_face(&mut self, expand_type: DeltaFace, amount: i32);
+    fn expand_face(&mut self, expand_type: DeltaFace, amount: i32);
 
-    fn delta_mirror(&mut self, axis: CoordAxis, amount: i32);
+    fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32);
 }
 
 pub mod cuboid {
@@ -36,6 +36,7 @@ pub mod cuboid {
 
     use crate::directional::CoordAxis;
     use crate::selection::selection::{DeltaFace, SelectionType};
+    use crate::selection::selection::DeltaFace::*;
 
     struct CuboidSelection {
         min: BlockPosition,
@@ -77,12 +78,75 @@ pub mod cuboid {
             contains
         }
 
-        fn delta_face(&mut self, delta_face: DeltaFace, amount: i32) {
+        fn expand_face(&mut self, delta_face: DeltaFace, amount: i32) {
+            match delta_face {
+                TOP => {
+                    self.max.y += amount;
+                    if self.max.y < self.min.y {
+                        let temp = self.min.y;
+                        self.min.y = self.max.y;
+                        self.max.y = temp;
+                    }
+                }
+                BOTTOM => {
+                    self.min.y -= amount;
+                    if self.max.y < self.min.y {
+                        let temp = self.min.y;
+                        self.min.y = self.max.y;
+                        self.max.y = temp;
+                    }
+                }
+                NORTH => {
+                    self.max.z -= amount;
+                    if self.max.z < self.min.z {
+                        let temp = self.min.z;
+                        self.min.z = self.max.z;
+                        self.max.z = temp;
+                    }
+                }
+                SOUTH => {
+                    self.max.z += amount;
+                    if self.max.z < self.min.z {
+                        let temp = self.min.z;
+                        self.min.z = self.max.z;
+                        self.max.z = temp;
+                    }
+                }
+                EAST => {
+                    self.max.x += amount;
+                    if self.max.x < self.min.x {
+                        let temp = self.min.x;
+                        self.min.x = self.max.x;
+                        self.max.x = temp;
+                    }
 
+                }
+                WEST => {
+                    self.max.x -= amount;
+                    if self.max.x < self.min.x {
+                        let temp = self.min.x;
+                        self.min.x = self.max.x;
+                        self.max.x = temp;
+                    }
+                }
+            }
         }
 
-        fn delta_mirror(&mut self, axis: CoordAxis, amount: i32) {
-            unimplemented!()
+        fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32) {
+            match axis {
+                CoordAxis::X => {
+                    self.expand_face(WEST, -amount);
+                    self.expand_face(EAST, amount);
+                },
+                CoordAxis::Y => {
+                    self.expand_face(TOP, amount);
+                    self.expand_face(BOTTOM, -amount);
+                },
+                CoordAxis::Z => {
+                    self.expand_face(NORTH, -amount);
+                    self.expand_face(SOUTH, amount);
+                }
+            }
         }
     }
 }

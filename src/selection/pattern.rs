@@ -33,7 +33,7 @@ impl Pattern {
 
     pub fn to_percentages(&self) -> HashMap<String, u8> {
         let k: f32 = 100.0 / (self.weights.values().sum::<u16>() as f32);
-        self.weights.iter().map(|t| (t.0.clone(), (*t.1 as f32 * k) as u8)).collect()
+        self.weights.iter().map(|t| (t.0.clone(), (*t.1 as f32 * k).round() as u8)).collect()
     }
 }
 

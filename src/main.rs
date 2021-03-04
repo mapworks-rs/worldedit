@@ -1,3 +1,5 @@
+use crate::selection::pattern::Pattern;
+
 pub mod directional;
 pub mod selection;
 pub mod clipboard;
