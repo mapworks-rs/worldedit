@@ -45,6 +45,8 @@ pub mod cuboid {
 
     impl CuboidSelection {
 
+        /// min and max MUST be conserved. See the expand_face function in CuboidSelection for examples
+        /// on conserving the min/mas relation
         fn new(pos1: BlockPosition, pos2: BlockPosition) -> CuboidSelection {
             CuboidSelection {
                 min: BlockPosition {

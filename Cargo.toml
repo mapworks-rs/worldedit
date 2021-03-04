@@ -5,7 +5,7 @@ authors = ["sagan <camjanssen120@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-quill = { git = "https://github.com/feather-rs/quill", branch = "main" }
+quill = { git = "https://github.com/feather-rs/feather", branch = "main" }
 rand = "0.7.3"
 glam = "0.12.0"
 plotters = "0.3"
