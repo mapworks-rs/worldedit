@@ -179,12 +179,8 @@ pub mod elliptical {
         fn contains_positions(&self, positions: Vec<Position>) -> bool {
 
             // first check if its even within the cuboid
-            for pos in positions {
-                if pos.x < self.min.x as f64 || pos.x > self.max.x as f64 ||
-                    pos.y < self.min.y as f64 || pos.y > self.max.y as f64 ||
-                    pos.z < self.min.z as f64 || pos.z > self.max.z as f64 {
-                    return false;
-                }
+            if !self.encapsulating.contains_positions(positions) {
+                return false;
             }
 
             let mut contains = true;
