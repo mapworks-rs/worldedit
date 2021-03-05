@@ -2,7 +2,7 @@ use quill::{BlockPosition, Entity, Game, Position};
 use quill::entities::Player;
 
 use crate::directional::CoordAxis;
-use crate::selection::selection::DeltaFace::*;
+use crate::selection::selection::ExpandFace::*;
 use crate::util::blockpos;
 
 pub struct Selection {
@@ -26,7 +26,7 @@ pub trait SelectionType {
         self.contains_positions(vec![position])
     }
 
-    fn expand_face(&mut self, delta_face: DeltaFace, amount: i32);
+    fn expand_face(&mut self, expand_face: ExpandFace, amount: i32);
 
     fn expand_mirrored(&mut self, axis: CoordAxis, amount: i32) {
         match axis {
@@ -53,8 +53,8 @@ pub mod cuboid {
 
     use crate::directional::CoordAxis;
     use crate::math::shape::rec;
-    use crate::selection::selection::{DeltaFace, SelectionType};
-    use crate::selection::selection::DeltaFace::*;
+    use crate::selection::selection::{ExpandFace, SelectionType};
+    use crate::selection::selection::ExpandFace::*;
 
     pub struct CuboidSelection {
         pub(super) min: BlockPosition,
@@ -98,7 +98,7 @@ pub mod cuboid {
             contains
         }
 
-        fn expand_face(&mut self, expand_face: DeltaFace, amount: i32) {
+        fn expand_face(&mut self, expand_face: ExpandFace, amount: i32) {
             match expand_face {
                 TOP => {
                     self.max.y += amount;
@@ -163,7 +163,7 @@ pub mod elliptical {
 
     use crate::directional::CoordAxis;
     use crate::math::shape::ellipse;
-    use crate::selection::selection::{DeltaFace, SelectionType};
+    use crate::selection::selection::{ExpandFace, SelectionType};
     use crate::selection::selection::cuboid::CuboidSelection;
     use crate::util::blockpos;
 
@@ -210,7 +210,7 @@ pub mod elliptical {
             contains
         }
 
-        fn expand_face(&mut self, expand_type: DeltaFace, amount: i32) {
+        fn expand_face(&mut self, expand_type: ExpandFace, amount: i32) {
             self.encapsulating.expand_face(expand_type, amount);
             self.height = self.encapsulating.max.y - self.encapsulating.min.y;
             self.radius_x = ((self.encapsulating.max.x - self.encapsulating.min.x) as f64 / 2.0).ceil() as u32;
@@ -228,7 +228,57 @@ pub mod elliptical {
     }
 }
 
-pub enum DeltaFace {
+pub mod ellipsoidal {
+    use crate::selection::selection::cuboid::CuboidSelection;
+    use quill::{BlockPosition, Position};
+    use crate::selection::selection::{SelectionType, ExpandFace};
+    use crate::math::shape::ellipsoid;
+
+    pub struct EllipsoidalSelection {
+        encapsulating: CuboidSelection,
+        radius_x: u32,
+        radius_y: u32,
+        radius_z: u32
+    }
+
+    impl EllipsoidalSelection {
+        pub fn new(pos1: BlockPosition, pos2: BlockPosition) -> EllipsoidalSelection {
+            let cuboid = CuboidSelection::new(pos1, pos2);
+            let min = cuboid.min;
+            let max = cuboid.max;
+            EllipsoidalSelection {
+                encapsulating: cuboid,
+                radius_x: ((max.x - min.x) as f64 / 2.0).ceil() as u32,
+                radius_y: ((max.y - min.y) as f64 / 2.0).ceil() as u32,
+                radius_z: ((max.z - min.z) as f64 / 2.0).ceil() as u32
+            }
+        }
+    }
+
+    impl SelectionType for EllipsoidalSelection {
+        fn contains_positions(&self, positions: Vec<Position>) -> bool {
+            unimplemented!()
+        }
+
+        fn expand_face(&mut self, expand_face: ExpandFace, amount: i32) {
+            self.encapsulating.expand_face(expand_face, amount);
+            self.radius_x = ((self.encapsulating.max.x - self.encapsulating.min.x) as f64 / 2.0).ceil() as u32;
+            self.radius_y = ((self.encapsulating.max.y - self.encapsulating.min.y) as f64 / 2.0).ceil() as u32;
+            self.radius_z = ((self.encapsulating.max.z - self.encapsulating.min.z) as f64 / 2.0).ceil() as u32;
+        }
+
+        fn get_blocks(self) -> Vec<BlockPosition> {
+            let centre = BlockPosition {
+                x: self.encapsulating.min.x + self.radius_x as i32,
+                y: self.encapsulating.min.y + self.radius_y as i32,
+                z: self.encapsulating.min.z + self.radius_z as i32
+            };
+            ellipsoid(self.radius_x as f32, self.radius_y as f32, self.radius_z as f32, true, &centre)
+        }
+    }
+}
+
+pub enum ExpandFace {
     TOP, BOTTOM, NORTH, SOUTH, EAST, WEST
 }
 
@@ -246,7 +296,7 @@ impl RelativeFace {
     /// Example: If I have a player looking South and I they now asked for the direction to the left
     /// of them. This function determines that they are looking South (positive z) and gives the
     /// corresponding direction to their left which would be East in this case.
-    fn delta_face(&self, player: Entity) -> DeltaFace {
+    fn expand_face(&self, player: Entity) -> ExpandFace {
 
         if matches!(self, RelativeFace::UP) {
             return TOP;
