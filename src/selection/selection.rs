@@ -1,9 +1,9 @@
-use quill::{BlockPosition, Position, Game, Entity};
+use quill::{BlockPosition, Entity, Game, Position};
 use quill::entities::Player;
 
 use crate::directional::CoordAxis;
-use crate::util::blockpos;
 use crate::selection::selection::DeltaFace::*;
+use crate::util::blockpos;
 
 pub struct Selection {
     player: Player,
@@ -11,6 +11,8 @@ pub struct Selection {
 }
 
 pub trait SelectionType {
+
+    fn contains_positions(&self, positions: Vec<Position>) -> bool;
 
     fn contains_blocks(&self, positions: Vec<BlockPosition>) -> bool {
         self.contains_positions(positions.iter().map(|p| Position::from(*p)).collect())
@@ -23,8 +25,6 @@ pub trait SelectionType {
     fn contains_position(&self, position: Position) -> bool {
         self.contains_positions(vec![position])
     }
-
-    fn contains_positions(&self, positions: Vec<Position>) -> bool;
 
     fn expand_face(&mut self, delta_face: DeltaFace, amount: i32);
 
@@ -44,18 +44,21 @@ pub trait SelectionType {
             }
         }
     }
+
+    fn get_blocks(self) -> Vec<BlockPosition>;
 }
 
 pub mod cuboid {
     use quill::{BlockPosition, Position};
 
     use crate::directional::CoordAxis;
+    use crate::math::shape::rec;
     use crate::selection::selection::{DeltaFace, SelectionType};
     use crate::selection::selection::DeltaFace::*;
 
     pub struct CuboidSelection {
-        min: BlockPosition,
-        max: BlockPosition
+        pub(super) min: BlockPosition,
+        pub(super) max: BlockPosition
     }
 
     impl CuboidSelection {
@@ -148,14 +151,21 @@ pub mod cuboid {
                 }
             }
         }
+
+        fn get_blocks(self) -> Vec<BlockPosition> {
+            rec(self.max.x - self.min.x, self.max.y - self.min.y, self.max.z - self.min.z, true, &self.min)
+        }
     }
 }
 
 pub mod elliptical {
     use quill::{BlockPosition, Position};
-    use crate::selection::selection::{SelectionType, DeltaFace};
+
     use crate::directional::CoordAxis;
+    use crate::math::shape::ellipse;
+    use crate::selection::selection::{DeltaFace, SelectionType};
     use crate::selection::selection::cuboid::CuboidSelection;
+    use crate::util::blockpos;
 
     pub struct EllipticalSelection {
         encapsulating: CuboidSelection,
@@ -166,11 +176,14 @@ pub mod elliptical {
 
     impl EllipticalSelection {
         pub fn new(pos1: BlockPosition, pos2: BlockPosition) -> EllipticalSelection {
+            let cuboid = CuboidSelection::new(pos1, pos2);
+            let min = cuboid.min;
+            let max = cuboid.max;
             EllipticalSelection {
-                encapsulating: CuboidSelection::new(pos1, pos2),
-                height: max_bp.y - min_bp.y,
-                radius_x: ((max_bp.x - min_bp.x) as f64 / 2.0).ceil() as u32,
-                radius_z: ((max_bp.z - min_bp.z) as f64 / 2.0).ceil() as u32
+                encapsulating: cuboid,
+                height: max.y - min.y,
+                radius_x: ((max.x - min.x) as f64 / 2.0).ceil() as u32,
+                radius_z: ((max.z - min.z) as f64 / 2.0).ceil() as u32
             }
         }
     }
@@ -179,7 +192,7 @@ pub mod elliptical {
         fn contains_positions(&self, positions: Vec<Position>) -> bool {
 
             // first check if its even within the cuboid
-            if !self.encapsulating.contains_positions(positions) {
+            if !self.encapsulating.contains_positions(positions.clone()) {
                 return false;
             }
 
@@ -199,9 +212,18 @@ pub mod elliptical {
 
         fn expand_face(&mut self, expand_type: DeltaFace, amount: i32) {
             self.encapsulating.expand_face(expand_type, amount);
-            self.height = max_bp.y - min_bp.y;
-            self.radius_x = ((max_bp.x - min_bp.x) as f64 / 2.0).ceil() as u32;
-            self.radius_z = ((max_bp.z - min_bp.z) as f64 / 2.0).ceil() as u32;
+            self.height = self.encapsulating.max.y - self.encapsulating.min.y;
+            self.radius_x = ((self.encapsulating.max.x - self.encapsulating.min.x) as f64 / 2.0).ceil() as u32;
+            self.radius_z = ((self.encapsulating.max.z - self.encapsulating.min.z) as f64 / 2.0).ceil() as u32;
+        }
+
+        fn get_blocks(self) -> Vec<BlockPosition> {
+            let centre = BlockPosition {
+                x: self.encapsulating.min.x + self.radius_x as i32,
+                y: self.encapsulating.min.y as i32,
+                z: self.encapsulating.min.z + self.radius_z as i32
+            };
+            ellipse(self.radius_x as f32, self.radius_z as f32, self.height, true, &centre)
         }
     }
 }

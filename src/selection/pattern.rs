@@ -22,6 +22,41 @@ impl Pattern {
         }
     }
 
+    /// Will attempt to convert a BlockKind into a pattern if it can be converted. Accepted BlockKinds will
+    /// follow the type: `n%block,....` etc. For example: `50%glass,10%dirt,60%stone`
+    pub fn from_string(string: String) -> Option<Pattern> {
+
+        let mut pattern = Pattern::new();
+
+        // = "50%stone,10%dirt,15%glass"
+        let elements = string.split(',');
+        // = "50%stone" "10%dirt" "15%glass"
+        for s in elements {
+            // = "50" "stone"
+            let components = s.split('%').collect::<Vec<&str>>();
+            if components.len() != 2 {
+                continue;
+            }
+            let weight_result = components.get(0).unwrap().parse::<u16>();
+            if weight_result.is_err() {
+                continue;
+            }
+            let block_kind_option = BlockKind::from_name(components.get(1).unwrap());
+            if block_kind_option.is_none() {
+                continue;
+            }
+            let weight = weight_result.unwrap();
+            let block_kind = block_kind_option.unwrap();
+
+            pattern.add(block_kind, weight);
+        }
+
+        match pattern.weights.is_empty() {
+            true => None,
+            false => Some(pattern)
+        }
+    }
+
     pub fn new_with(elements: &[(BlockKind, u16)]) -> Pattern {
         let mut pat = Pattern::new();
         pat.add_multiple(elements);
@@ -41,42 +76,5 @@ impl Pattern {
     pub fn to_percentages(&self) -> HashMap<BlockKind, u8> {
         let k: f32 = 100.0 / (self.weights.values().sum::<u16>() as f32);
         self.weights.iter().map(|t| (t.0.clone(), (*t.1 as f32 * k).round() as u8)).collect()
-    }
-}
-
-impl TryFrom<BlockKind> for Pattern {
-    type Error = &'static str;
-
-    /// Will attempt to convert a BlockKind into a pattern if it can be converted. Accepted BlockKinds will
-    /// follow the type: `n%block,....` etc. For example: `50%glass,10%dirt,60%stone`
-    fn try_from(value: BlockKind) -> Result<Self, Self::Error> {
-
-        let mut pattern = Pattern::new();
-
-        // = "50%stone,10%dirt,15%glass"
-        let elements = value.split(',');
-        // = "50%stone" "10%dirt" "15%glass"
-        for s in elements {
-            // = "50" "stone"
-            let components = s.split('%').collect::<Vec<&str>>();
-            if components.len() != 2 {
-                continue;
-            }
-            //todo add checks for if block is 'placeable'
-            let weight_result = components.get(0).unwrap().parse::<u16>();
-            if weight_result.is_err() {
-                continue;
-            }
-            let block_kind = components.get(1).unwrap();
-            let weight = weight_result.unwrap();
-
-            pattern.add(BlockKind::from(block_kind.parse::<BlockKind>().unwrap()), weight);
-        }
-
-        return if pattern.weights.is_empty() {
-            Err("No valid patterns found. BlockKind cannot be converted to pattern.")
-        } else {
-            Ok(pattern)
-        }
     }
 }
