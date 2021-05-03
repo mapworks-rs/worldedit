@@ -1,7 +1,7 @@
 [package]
 name = "worldedit"
 version = "0.0.1"
-authors = ["sagan <camjanssen120@gmail.com>"]
+authors = ["sagan"]
 edition = "2018"
 
 [dependencies]
